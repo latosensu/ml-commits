@@ -11,6 +11,7 @@ last_crawled = 188000000
 crawl_goal = last_crawled + 20000
 repos_crawled = 0
 t = time.time()
+page_size = 100
 
 
 class CrawlerException(Exception):
@@ -32,14 +33,15 @@ def close_file():
 
 
 def make_request(url):
-    r = requests.get(url, auth=basicAuthCredentials)
+    headers = {'Authorization': f"Bearer {basicAuthCredentials}"}
+    r = requests.get(url, headers = headers)
     if r.status_code > 400:
         raise CrawlerException('Query failed with message: ' + r.text)
     return json.loads(r.text)
 
 
-def retrieve_repo(since):
-    repo_list = make_request(f'https://api.github.com/repositories?since={since}')
+def retrieve_repo(page):
+    repo_list = make_request(f'https://api.github.com/search/repositories?q=org:microsoft&per_page={page_size}&page={page}')
     return repo_list
 
 
@@ -61,10 +63,15 @@ def crawl_repos():
         file.write('[\n')
 
     t = time.time()
-    while last_crawled < crawl_goal:
+    page = 1
+    number_of_repositories = page_size
+    while repos_crawled < number_of_repositories:
         try:
             print(f'\nRetrieving repos since {last_crawled}')
-            repos = retrieve_repo(last_crawled)
+            response = retrieve_repo(page)
+            repos = response['items']
+            number_of_repositories = response['total_count']
+            # //.items
             for name, ident in list(map(lambda repo: (repo['full_name'], repo['id']), repos)):
 
                 print(f'>>> {ident} - {name}')
@@ -88,6 +95,8 @@ def crawl_repos():
         except CrawlerException as e:
             repos_crawled += 1
             print(e)
+        page += 1
+        
 
 
 def main():
@@ -101,10 +110,11 @@ def main():
         credentials = json.load(cred)
         username = credentials['username']
         password = credentials['password']
+        token = credentials['token']
         if not username or not password:
             print('Please enter your GitHub credentials in the file credentials.json to start crawling.')
             exit()
-        basicAuthCredentials = (username, password)
+        basicAuthCredentials = (token)
 
     atexit.register(close_file)
     crawl_repos()

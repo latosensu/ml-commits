@@ -3,10 +3,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-with open('../files/features.json', encoding='utf8') as file:
+with open('./files/features.json', encoding='utf8') as file:
     features = json.load(file)
 
-with open('../files/labels.json', encoding='utf8') as file:
+with open('./files/labels.json', encoding='utf8') as file:
     labels = json.load(file)
 
 # transform labels into numerical categories (e.g. Java => 1, Python => 2)
@@ -35,6 +35,7 @@ y_pred = classifier.predict(X_test)
 corr = 0
 wrong = 0
 for i in range(0, len(y_pred)):
+    print('\nCommit: ', features[i])
     for k in categories.keys():
         if categories[k] == y_pred[i]:
             if y_pred[i] == Y_test[i]:
@@ -48,6 +49,7 @@ for i in range(0, len(y_pred)):
     for k in categories.keys():
         if categories[k] == Y_test[i]:
             print(k)  # actual value
+    
 
 # Print out results
 print('\nCorrect:', corr)
